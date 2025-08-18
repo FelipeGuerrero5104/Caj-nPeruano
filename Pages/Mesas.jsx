@@ -1,6 +1,6 @@
-// src/components/Mesas.jsx
 import { useState } from "react";
 import ModalMesa from "../src/components/ModalMesa";
+import { supabase } from "../src/Hooks/supabase";
 
 export default function Mesas() {
   const [selectedMesa, setSelectedMesa] = useState(null);
@@ -16,15 +16,6 @@ export default function Mesas() {
     { id: 3, shape: "square" },
     { id: 2, shape: "square" },
     { id: 1, shape: "square" },
-  ];
-
-  const segundaFilaIzq = [
-    { id: 11, w: "w-14", h: "h-48" },
-    { id: 12, w: "w-40", h: "h-14" },
-    { id: 13, w: "w-40", h: "h-14" },
-    { id: 14, w: "w-14", h: "h-16" },
-    { id: 15, w: "w-14", h: "h-16" },
-    { id: 16, w: "w-14", h: "h-16" },
   ];
 
   const segundaFilaDer = [
@@ -50,9 +41,35 @@ export default function Mesas() {
     </div>
   );
 
+  // 🔥 Función para reiniciar las mesas (eliminar pedidos + detalles)
+  const reiniciarMesas = async () => {
+    try {
+      // Borrar pedido_detalle primero (dependencia)
+      const { error: detalleError } = await supabase
+        .from("pedido_detalle")
+        .delete()
+        .neq("id_detalle", 0);
+
+      if (detalleError) throw detalleError;
+
+      // Luego borrar pedidos
+      const { error: pedidosError } = await supabase
+        .from("pedidos")
+        .delete()
+        .neq("id_pedido", 0);
+
+      if (pedidosError) throw pedidosError;
+
+      alert("✅ Todas las mesas fueron reiniciadas");
+    } catch (err) {
+      console.error("Error reiniciando mesas:", err.message);
+      alert("❌ Hubo un error al reiniciar las mesas");
+    }
+  };
+
   return (
-    <section className="bg-amber-400 w-full h-screen flex items-center justify-center">
-      <div className="bg-amber-200 flex flex-col gap-5 p-4 rounded-lg mb-24">
+    <section className="bg-gradient-to-r from-amber-400 to-amber-500 w-full h-screen flex flex-col items-center justify-center">
+      <div className="bg-gradient-to-r from-amber-300 to-amber-200 flex flex-col gap-5 p-4 rounded-lg mb-24">
         {/* Fila superior */}
         <div className="flex gap-4">
           {primeraFila.map((mesa) => (
@@ -85,14 +102,23 @@ export default function Mesas() {
         </div>
       </div>
 
-      {/* Modal: se muestra solo si hay una mesa seleccionada */}
+      {/* Modal */}
       {selectedMesa && (
         <ModalMesa
           idMesa={selectedMesa}
           onClose={() => setSelectedMesa(null)}
         />
       )}
+
+      {/* Botón reiniciar */}
+      <button
+        onClick={reiniciarMesas}
+        className="border border-white rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold text-3xl p-3 hover:from-amber-600 hover:to-amber-700 transition-all duration-300"
+      >
+        Reiniciar Mesas
+      </button>
     </section>
   );
 }
+
 

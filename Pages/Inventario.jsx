@@ -34,11 +34,11 @@ export default function Inventario() {
       : productos.filter((p) => p.categoria === categoria);
 
   return (
-    <div className="p-6 bg-amber-400 min-h-screen">
+    <div className="p-6 bg-gradient-to-r from-amber-400 to-amber-500 min-h-screen">
       <h2 className="text-2xl font-bold mb-4">Inventario</h2>
 
       {/* Selector de categoría */}
-      <div className="mb-4">
+      <div className="mb-4 ">
         <label className="mr-2 font-semibold">Filtrar por categoría:</label>
         <select
           className="border border-black bg-amber-700 rounded px-2 py-1 text-white font-semibold"
@@ -46,7 +46,7 @@ export default function Inventario() {
           onChange={(e) => setCategoria(e.target.value)}
         >
           {categorias.map((cat) => (
-            <option key={cat} value={cat}>
+            <option key={cat} value={cat} className="">
               {cat}
             </option>
           ))}
@@ -54,7 +54,7 @@ export default function Inventario() {
       </div>
 
       {/* Cabecera de columnas */}
-      <div className="grid grid-cols-4 gap-4 font-semibold border-b-2 pb-2 mb-2">
+      <div className="grid grid-cols-4 gap-4 font-semibold border-b-2 pb-2 mb-2 ">
         <div>Codigo Producto</div>
         <div>Nombre</div>
         <div>Stock</div>
@@ -69,7 +69,7 @@ export default function Inventario() {
         >
           <div>{prod.id_producto}</div>
           <div>{prod.nombre}</div>
-          <div className={prod.stock_actual < 10 ? "text-red-600 font-bold" : ""}>
+          <div className={prod.stock_actual < 10 ? "text-red-600 font-bold text-xl" : ""}>
             {prod.stock_actual}
           </div>
           <div>{prod.categoria}</div>

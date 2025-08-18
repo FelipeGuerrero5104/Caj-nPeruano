@@ -9,9 +9,12 @@ export default function Ingresos() {
 
   const handleIngreso = async (e) => {
     e.preventDefault();
+    console.log("=== NUEVO INGRESO EJECUTADO ===");
+    console.log("Datos recibidos:", { codigo, cantidad, boleta });
 
     if (!codigo || !cantidad || !boleta || Number(cantidad) <= 0) {
       setMensaje("Ingresa un código, cantidad y número de boleta válidos");
+      console.log("❌ Validación fallida");
       return;
     }
 
@@ -22,24 +25,14 @@ export default function Ingresos() {
       .eq("id_producto", Number(codigo))
       .single();
 
+    console.log("Producto encontrado:", producto, "Error:", prodError);
+
     if (prodError || !producto) {
       setMensaje("Producto no encontrado");
       return;
     }
 
-    // Actualizar stock
-    const nuevaCantidad = producto.stock_actual + Number(cantidad);
-    const { error: updateError } = await supabase
-      .from("productos")
-      .update({ stock_actual: nuevaCantidad })
-      .eq("id_producto", Number(codigo));
-
-    if (updateError) {
-      setMensaje("Error al actualizar el stock");
-      return;
-    }
-
-    // Insertar en movimientos_inventario
+    // Insertar en movimientos_inventario (el trigger se encarga del stock)
     const { error: movError } = await supabase
       .from("movimientos_inventario")
       .insert([
@@ -52,10 +45,12 @@ export default function Ingresos() {
       ]);
 
     if (movError) {
-      setMensaje("Stock actualizado, pero error al registrar movimiento");
+      console.log("❌ Error al registrar movimiento:", movError);
+      setMensaje("Error al registrar movimiento");
     } else {
+      console.log("✅ Movimiento registrado correctamente");
       setMensaje(
-        `Stock actualizado: ${producto.stock_actual} → ${nuevaCantidad} (Boleta #${boleta})`
+        `Ingreso registrado correctamente (Boleta #${boleta}).stock Actualizado`
       );
       setCodigo("");
       setCantidad("");
@@ -64,11 +59,16 @@ export default function Ingresos() {
   };
 
   return (
-    <div className="p-6 bg-amber-400 min-h-screen flex flex-col items-center">
+    <div className="p-6 bg-gradient-to-r from-amber-400 to-amber-500 min-h-screen flex flex-col items-center">
       <h2 className="text-2xl font-bold mb-4">Ingresos de Productos</h2>
-      <form onSubmit={handleIngreso} className="space-y-4 bg-amber-200 w-[500px] h-[350px] flex flex-col items-center justify-center rounded-lg">
+      <form
+        onSubmit={handleIngreso}
+        className="space-y-4 bg-gradient-to-r from-amber-300 to-amber-200 w-[500px] h-[350px] flex flex-col items-center justify-center rounded-lg"
+      >
         <div>
-          <label className="block font-semibold mb-1 text-lg">Código de producto:</label>
+          <label className="block font-semibold mb-1 text-lg">
+            Código de producto:
+          </label>
           <input
             type="number"
             value={codigo}
@@ -78,7 +78,9 @@ export default function Ingresos() {
         </div>
 
         <div>
-          <label className="block font-semibold mb-1 text-lg">Cantidad a ingresar:</label>
+          <label className="block font-semibold mb-1 text-lg">
+            Cantidad a ingresar:
+          </label>
           <input
             type="number"
             value={cantidad}
@@ -88,7 +90,9 @@ export default function Ingresos() {
         </div>
 
         <div>
-          <label className="block font-semibold mb-1 text-lg">Número de boleta:</label>
+          <label className="block font-semibold mb-1 text-lg">
+            Número de boleta:
+          </label>
           <input
             type="text"
             value={boleta}
@@ -99,7 +103,7 @@ export default function Ingresos() {
 
         <button
           type="submit"
-          className="bg-green-600 text-white font-semibold px-4 py-2 rounded hover:bg-green-700"
+          className="bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold px-4 py-2 rounded hover:from-amber-600 hover:to-amber-700"
         >
           Ingresar
         </button>
