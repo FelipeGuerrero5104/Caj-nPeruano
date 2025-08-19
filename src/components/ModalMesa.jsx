@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../Hooks/supabase";
+import { useVentas } from "../Hooks/VentasContext";
 
 export default function ModalMesa({ idMesa, onClose }) {
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const { agregarTotal } = useVentas();
 
   useEffect(() => {
     if (!idMesa) return;
@@ -38,6 +40,14 @@ export default function ModalMesa({ idMesa, onClose }) {
 
       if (error) throw error;
       setPedidos(data || []);
+
+      // 🔹 Guardar totales en contexto
+      data?.forEach((pedido) => {
+        const totalCalculado = pedido.pedido_detalle?.reduce(
+          (sum, det) => sum + Number(det.subtotal), 0
+        ) ?? 0;
+        agregarTotal({ id_pedido: pedido.id_pedido, total: totalCalculado });
+      });
     } catch (err) {
       console.error("Error cargando pedidos:", err);
       setErrorMsg("Error cargando pedidos (revisa consola).");
@@ -63,7 +73,6 @@ export default function ModalMesa({ idMesa, onClose }) {
         );
       });
       ventana.document.write("</ul>");
-      // Total calculado dinámicamente
       const totalCalculado = pedido.pedido_detalle?.reduce(
         (sum, det) => sum + Number(det.subtotal), 0
       ) ?? 0;
@@ -85,7 +94,6 @@ export default function ModalMesa({ idMesa, onClose }) {
       }
 
       const ids = pedidosPendientes.map((p) => p.id_pedido);
-
       const { error } = await supabase
         .from("pedidos")
         .update({ estado: "pagado" })
@@ -94,10 +102,35 @@ export default function ModalMesa({ idMesa, onClose }) {
       if (error) throw error;
 
       alert("✅ Pedido marcado como pagado.");
-      fetchPedidos(); // refrescar datos
+      fetchPedidos();
     } catch (err) {
       console.error("Error cambiando estado:", err);
       alert("❌ Error al cambiar estado.");
+    }
+  };
+
+  // 🔹 Eliminar pedido
+  const handleEliminarPedido = async (idPedido) => {
+    if (!window.confirm("¿Seguro que deseas eliminar este pedido?")) return;
+
+    try {
+      const { error: detalleError } = await supabase
+        .from("pedido_detalle")
+        .delete()
+        .eq("id_pedido", idPedido);
+      if (detalleError) throw detalleError;
+
+      const { error: pedidoError } = await supabase
+        .from("pedidos")
+        .delete()
+        .eq("id_pedido", idPedido);
+      if (pedidoError) throw pedidoError;
+
+      alert("🗑️ Pedido eliminado con éxito.");
+      fetchPedidos();
+    } catch (err) {
+      console.error("Error eliminando pedido:", err);
+      alert("❌ Error al eliminar pedido.");
     }
   };
 
@@ -134,7 +167,7 @@ export default function ModalMesa({ idMesa, onClose }) {
                 <div className="flex justify-between items-baseline">
                   <div>
                     <p className="font-semibold">Pedido #{pedido.id_pedido}</p>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-500 font-bold">
                       Fecha: {new Date(pedido.fecha).toLocaleString()}
                     </p>
                   </div>
@@ -148,7 +181,7 @@ export default function ModalMesa({ idMesa, onClose }) {
                   {pedido.pedido_detalle && pedido.pedido_detalle.length > 0 ? (
                     pedido.pedido_detalle.map((det) => (
                       <li key={det.id_detalle} className="flex justify-between">
-                        <span>
+                        <span className="font-bold ">
                           {det.cantidad} × {det.productos?.nombre ?? `#${det.id_producto}`}
                         </span>
                         <span className="font-medium">${det.subtotal}</span>
@@ -160,6 +193,15 @@ export default function ModalMesa({ idMesa, onClose }) {
                 </ul>
 
                 <div className="mt-2 text-right font-bold">Total: ${totalCalculado}</div>
+
+                <div className="mt-3 flex justify-end">
+                  <button
+                    onClick={() => handleEliminarPedido(pedido.id_pedido)}
+                    className="rounded-lg text-sm font-semibold px-3 py-1 bg-red-500 text-white hover:bg-red-600"
+                  >
+                    Eliminar Pedido
+                  </button>
+                </div>
               </div>
             );
           })}
@@ -182,5 +224,6 @@ export default function ModalMesa({ idMesa, onClose }) {
     </div>
   );
 }
+
 
 
