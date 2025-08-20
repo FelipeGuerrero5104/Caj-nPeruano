@@ -13,8 +13,12 @@ export const VentasProvider = ({ children }) => {
     });
   };
 
+  const eliminarTotal = (id_pedido) => {
+    setTotales((prev) => prev.filter((p) => p.id_pedido !== id_pedido));
+  };
+
   return (
-    <VentasContext.Provider value={{ totales, agregarTotal }}>
+    <VentasContext.Provider value={{ totales, agregarTotal, eliminarTotal }}>
       {children}
     </VentasContext.Provider>
   );

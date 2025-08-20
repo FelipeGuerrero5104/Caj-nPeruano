@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "../src/Hooks/supabase";
+import { supabase } from "../Hooks/supabase";
 
 export default function Inventario() {
   const [productos, setProductos] = useState([]);

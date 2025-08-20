@@ -6,7 +6,7 @@ export default function ModalMesa({ idMesa, onClose }) {
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-  const { agregarTotal } = useVentas();
+  const { agregarTotal, eliminarTotal } = useVentas();
 
   useEffect(() => {
     if (!idMesa) return;
@@ -43,9 +43,11 @@ export default function ModalMesa({ idMesa, onClose }) {
 
       // 🔹 Guardar totales en contexto
       data?.forEach((pedido) => {
-        const totalCalculado = pedido.pedido_detalle?.reduce(
-          (sum, det) => sum + Number(det.subtotal), 0
-        ) ?? 0;
+        const totalCalculado =
+          pedido.pedido_detalle?.reduce(
+            (sum, det) => sum + Number(det.subtotal),
+            0
+          ) ?? 0;
         agregarTotal({ id_pedido: pedido.id_pedido, total: totalCalculado });
       });
     } catch (err) {
@@ -65,17 +67,23 @@ export default function ModalMesa({ idMesa, onClose }) {
 
     pedidos.forEach((pedido) => {
       ventana.document.write(`<h3>Pedido #${pedido.id_pedido}</h3>`);
-      ventana.document.write(`<p>Fecha: ${new Date(pedido.fecha).toLocaleString()}</p>`);
+      ventana.document.write(
+        `<p>Fecha: ${new Date(pedido.fecha).toLocaleString()}</p>`
+      );
       ventana.document.write("<ul>");
       pedido.pedido_detalle?.forEach((det) => {
         ventana.document.write(
-          `<li>${det.cantidad} × ${det.productos?.nombre ?? `#${det.id_producto}`} - $${det.subtotal}</li>`
+          `<li>${det.cantidad} × ${
+            det.productos?.nombre ?? `#${det.id_producto}`
+          } - $${det.subtotal}</li>`
         );
       });
       ventana.document.write("</ul>");
-      const totalCalculado = pedido.pedido_detalle?.reduce(
-        (sum, det) => sum + Number(det.subtotal), 0
-      ) ?? 0;
+      const totalCalculado =
+        pedido.pedido_detalle?.reduce(
+          (sum, det) => sum + Number(det.subtotal),
+          0
+        ) ?? 0;
       ventana.document.write(`<p><b>Total: $${totalCalculado}</b></p>`);
     });
 
@@ -109,7 +117,7 @@ export default function ModalMesa({ idMesa, onClose }) {
     }
   };
 
-  // 🔹 Eliminar pedido
+  // 🔹 Eliminar pedido (mantiene en contexto)
   const handleEliminarPedido = async (idPedido) => {
     if (!window.confirm("¿Seguro que deseas eliminar este pedido?")) return;
 
@@ -134,6 +142,34 @@ export default function ModalMesa({ idMesa, onClose }) {
     }
   };
 
+  // 🔹 Anular pedido (elimina de BD y del contexto)
+  const handleAnularPedido = async (idPedido) => {
+    if (!window.confirm("¿Seguro que deseas ANULAR este pedido?")) return;
+
+    try {
+      const { error: detalleError } = await supabase
+        .from("pedido_detalle")
+        .delete()
+        .eq("id_pedido", idPedido);
+      if (detalleError) throw detalleError;
+
+      const { error: pedidoError } = await supabase
+        .from("pedidos")
+        .delete()
+        .eq("id_pedido", idPedido);
+      if (pedidoError) throw pedidoError;
+
+      // 🔹 Eliminar también del contexto
+      eliminarTotal(idPedido);
+
+      alert("🚫 Pedido anulado con éxito.");
+      fetchPedidos();
+    } catch (err) {
+      console.error("Error anulando pedido:", err);
+      alert("❌ Error al anular pedido.");
+    }
+  };
+
   if (!idMesa) return null;
 
   return (
@@ -147,20 +183,28 @@ export default function ModalMesa({ idMesa, onClose }) {
           ×
         </button>
 
-        <h2 className="text-2xl font-bold mb-3 text-amber-700">Mesa {idMesa}</h2>
+        <h2 className="text-2xl font-bold mb-3 text-amber-700">
+          Mesa {idMesa}
+        </h2>
 
-        {loading && <p className="text-gray-500 font-semibold">Cargando pedidos...</p>}
+        {loading && (
+          <p className="text-gray-500 font-semibold">Cargando pedidos...</p>
+        )}
         {errorMsg && <p className="text-red-500">{errorMsg}</p>}
 
         {!loading && pedidos.length === 0 && (
-          <p className="text-gray-500 font-semibold">No hay pedidos para esta mesa.</p>
+          <p className="text-gray-500 font-semibold">
+            No hay pedidos para esta mesa.
+          </p>
         )}
 
         {!loading &&
           pedidos.map((pedido) => {
-            const totalCalculado = pedido.pedido_detalle?.reduce(
-              (sum, det) => sum + Number(det.subtotal), 0
-            ) ?? 0;
+            const totalCalculado =
+              pedido.pedido_detalle?.reduce(
+                (sum, det) => sum + Number(det.subtotal),
+                0
+              ) ?? 0;
 
             return (
               <div key={pedido.id_pedido} className="mb-4 border-b pb-3">
@@ -182,7 +226,8 @@ export default function ModalMesa({ idMesa, onClose }) {
                     pedido.pedido_detalle.map((det) => (
                       <li key={det.id_detalle} className="flex justify-between">
                         <span className="font-bold ">
-                          {det.cantidad} × {det.productos?.nombre ?? `#${det.id_producto}`}
+                          {det.cantidad} ×{" "}
+                          {det.productos?.nombre ?? `#${det.id_producto}`}
                         </span>
                         <span className="font-medium">${det.subtotal}</span>
                       </li>
@@ -192,9 +237,17 @@ export default function ModalMesa({ idMesa, onClose }) {
                   )}
                 </ul>
 
-                <div className="mt-2 text-right font-bold">Total: ${totalCalculado}</div>
+                <div className="mt-2 text-right font-bold">
+                  Total: ${totalCalculado}
+                </div>
 
-                <div className="mt-3 flex justify-end">
+                <div className="mt-3 flex justify-end gap-2">
+                  <button
+                    onClick={() => handleAnularPedido(pedido.id_pedido)}
+                    className="rounded-lg text-sm font-semibold px-3 py-1 bg-gray-500 text-white hover:bg-gray-600"
+                  >
+                    Anular Pedido
+                  </button>
                   <button
                     onClick={() => handleEliminarPedido(pedido.id_pedido)}
                     className="rounded-lg text-sm font-semibold px-3 py-1 bg-red-500 text-white hover:bg-red-600"

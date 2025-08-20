@@ -1,8 +1,8 @@
 import { useState } from "react";
-import ModalMesa from "../src/components/ModalMesa";
-import ModalCierreJornada from "../src/components/ModalCierreJornada";
-import { VentasProvider } from "../src/Hooks/VentasContext";
-import { supabase } from "../src/Hooks/supabase";
+import ModalMesa from "../components/ModalMesa";
+import ModalCierreJornada from "../components/ModalCierreJornada";
+import { VentasProvider } from "../Hooks/VentasContext";
+import { supabase } from "../Hooks/supabase";
 
 export default function Mesas() {
   return (

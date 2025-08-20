@@ -1,7 +1,7 @@
 import { Route, Routes } from "react-router-dom"
-import Ingresos from "../Pages/Ingresos"
-import Inventario from "../Pages/Inventario"
-import Mesas from "../Pages/Mesas"
+import Ingresos from "./Pages/Ingresos"
+import Inventario from "./Pages/Inventario"
+import Mesas from "./Pages/Mesas"
 import NavBar from "./components/NavBar"
 
 export default function App(){

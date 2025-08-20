@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { supabase } from "../src/Hooks/supabase";
+import { supabase } from "/src/Hooks/supabase";
 
 export default function Ingresos() {
   const [codigo, setCodigo] = useState("");
